@@ -7,9 +7,6 @@ const std = @import("std");
 //     @cInclude("emscripten/emscripten.h");
 // });
 
-const screenWidth = 800;
-const screenHeight = 450;
-
 var grid: game.Grid = undefined;
 
 pub fn main() anyerror!void {
@@ -20,7 +17,10 @@ pub fn main() anyerror!void {
     );
     defer grid.deinit();
 
-    rl.initWindow(screenWidth, screenHeight, "Le Chat Noir - TheComputerM");
+    const width = grid.cell_radius * grid.width * 2 + grid.cell_radius;
+    const height = grid.cell_radius * grid.height * 2;
+
+    rl.initWindow(@intCast(width), @intCast(height), "Le Chat Noir - TheComputerM");
     defer rl.closeWindow();
 
     if (builtin.os.tag == .emscripten) {
