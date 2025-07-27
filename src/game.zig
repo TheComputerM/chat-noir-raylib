@@ -20,16 +20,6 @@ const CellState = enum {
 const GridCell = struct {
     x: u32,
     y: u32,
-
-    /// Returns the state of the cell in the grid.
-    fn getState(self: GridCell, grid: *Grid) CellState {
-        return grid.cells.items[self.y].items[self.x];
-    }
-
-    /// Sets the state of the cell in the grid.
-    fn setState(self: GridCell, grid: *Grid, state: CellState) void {
-        grid.cells.items[self.y].items[self.x] = state;
-    }
 };
 
 pub const Grid = struct {
@@ -64,7 +54,7 @@ pub const Grid = struct {
             .cat = cat,
         };
 
-        cat.setState(&grid, CellState.cat);
+        grid.setCellState(cat, CellState.cat);
 
         return grid;
     }
@@ -76,12 +66,47 @@ pub const Grid = struct {
         self.cells.deinit();
     }
 
+    /// Renders the grid to the raylib window.
+    pub fn render(self: *Grid) !void {
+        for (0..self.height) |j| {
+            for (0..self.width) |i| {
+                const cell = GridCell{
+                    .x = @intCast(i),
+                    .y = @intCast(j),
+                };
+                const center = self.getCellCenterPosition(cell);
+                const color = self.getCellState(cell).getColor();
+
+                rl.drawPoly(
+                    center,
+                    6,
+                    @as(f32, @floatFromInt(self.cell_radius)),
+                    90.0,
+                    color,
+                );
+            }
+        }
+    }
+
+    pub fn handleClick(self: *Grid, mouse: rl.Vector2) void {
+        const cell = self.getCellContainingPoint(mouse) orelse return;
+        self.setCellState(cell, CellState.blocked);
+    }
+
+    /// Sets the state of the cell at the given grid coordinates.
+    fn getCellState(self: *Grid, cell: GridCell) CellState {
+        return self.cells.items[cell.y].items[cell.x];
+    }
+
+    /// Sets the state of the cell at the given grid coordinates.
+    fn setCellState(self: *Grid, cell: GridCell, state: CellState) void {
+        self.cells.items[cell.y].items[cell.x] = state;
+    }
+
     /// Returns the position of the cell in pixel coordinates.
-    fn getCellCenterPosition(self: *Grid, cell: *const GridCell) rl.Vector2 {
-        const i = cell.x;
-        const j = cell.y;
-        const x = i * self.cell_radius * 2 + (j % 2) * self.cell_radius + self.cell_radius;
-        const y = j * self.cell_radius * 2 + self.cell_radius;
+    fn getCellCenterPosition(self: *Grid, cell: GridCell) rl.Vector2 {
+        const x = cell.x * self.cell_radius * 2 + (cell.y % 2) * self.cell_radius + self.cell_radius;
+        const y = cell.y * self.cell_radius * 2 + self.cell_radius;
         return rl.Vector2{
             .x = @as(f32, @floatFromInt(x)),
             .y = @as(f32, @floatFromInt(y)),
@@ -92,7 +117,7 @@ pub const Grid = struct {
     fn getCellContainingPoint(self: *Grid, point: rl.Vector2) ?GridCell {
         for (0..self.height) |j| {
             for (0..self.width) |i| {
-                const center = self.getCellCenterPosition(&GridCell{
+                const center = self.getCellCenterPosition(GridCell{
                     .x = @intCast(i),
                     .y = @intCast(j),
                 });
@@ -109,33 +134,6 @@ pub const Grid = struct {
             }
         }
         return null;
-    }
-
-    /// Renders the grid to the raylib window.
-    pub fn render(self: *Grid) !void {
-        for (0..self.height) |j| {
-            for (0..self.width) |i| {
-                const cell = GridCell{
-                    .x = @intCast(i),
-                    .y = @intCast(j),
-                };
-                const center = self.getCellCenterPosition(&cell);
-                const color = cell.getState(self).getColor();
-
-                rl.drawPoly(
-                    center,
-                    6,
-                    @as(f32, @floatFromInt(self.cell_radius)),
-                    90.0,
-                    color,
-                );
-            }
-        }
-    }
-
-    pub fn handleClick(self: *Grid, mouse: rl.Vector2) void {
-        const cell = self.getCellContainingPoint(mouse) orelse return;
-        cell.setState(self, CellState.blocked);
     }
 
     /// Returns a list of surrounding cells for the given cell.
