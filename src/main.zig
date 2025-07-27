@@ -20,7 +20,7 @@ pub fn main() anyerror!void {
     const width = grid.cell_radius * grid.width * 2 + grid.cell_radius;
     const height = grid.cell_radius * grid.height * 2;
 
-    rl.initWindow(@intCast(width), @intCast(height), "Le Chat Noir - TheComputerM");
+    rl.initWindow(@intCast(width), @intCast(height), "Chat Noir");
     defer rl.closeWindow();
 
     if (builtin.os.tag == .emscripten) {

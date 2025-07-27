@@ -90,7 +90,20 @@ pub const Grid = struct {
 
     pub fn handleClick(self: *Grid, mouse: rl.Vector2) void {
         const cell = self.getCellContainingPoint(mouse) orelse return;
+
         self.setCellState(cell, CellState.blocked);
+        const path = self.shortestPath(self.cat) catch |err| {
+            std.log.err("Error finding path: {}\n", .{err});
+            return;
+        };
+        std.log.info("Shortest path found: {any}", .{path});
+        if (path.len == 0) {
+            std.log.warn("No path found to the edge of the grid.", .{});
+            return;
+        }
+        self.moveCat(path[0]) catch |err| {
+            std.log.err("Error moving cat: {}\n", .{err});
+        };
     }
 
     /// Sets the state of the cell at the given grid coordinates.
@@ -196,5 +209,68 @@ pub const Grid = struct {
         }
 
         return output.toOwnedSlice();
+    }
+
+    fn shortestPath(self: *Grid, source: GridCell) ![]GridCell {
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
+
+        var visited = try allocator.alloc([]bool, self.height);
+        for (0..self.height) |i| {
+            visited[i] = try allocator.alloc(bool, self.width);
+            @memset(visited[i], false);
+        }
+
+        var parent = try allocator.alloc([]?GridCell, self.height);
+        for (0..self.height) |i| {
+            parent[i] = try allocator.alloc(?GridCell, self.width);
+            @memset(parent[i], null);
+        }
+
+        var queue = std.ArrayList(GridCell).init(allocator);
+        defer queue.deinit();
+
+        visited[source.y][source.x] = true;
+        try queue.append(source);
+
+        var destination: GridCell = undefined;
+        while (queue.items.len > 0) {
+            const node = queue.orderedRemove(0);
+
+            if (node.x == 0 or node.y == 0 or node.x == self.width - 1 or node.y == self.height - 1) {
+                destination = node;
+                break;
+            }
+
+            const surrounding = try self.getSurroundingCells(node);
+            for (surrounding) |cell| {
+                if (!visited[cell.y][cell.x] and self.getCellState(cell) == CellState.available) {
+                    visited[cell.y][cell.x] = true;
+                    try queue.append(cell);
+                    parent[cell.y][cell.x] = node;
+                }
+            }
+        }
+
+        var path = std.ArrayList(GridCell).init(std.heap.page_allocator);
+        var current: ?GridCell = destination;
+        while (current) |c| {
+            try path.append(c);
+            current = parent[c.y][c.x];
+        }
+
+        const output = try path.toOwnedSlice();
+        std.mem.reverse(GridCell, output);
+        return output[1..];
+    }
+
+    fn moveCat(self: *Grid, destination: GridCell) !void {
+        if (self.getCellState(destination) != CellState.available) {
+            return error.InvalidMove;
+        }
+        self.setCellState(self.cat, CellState.available);
+        self.cat = destination;
+        self.setCellState(self.cat, CellState.cat);
     }
 };
