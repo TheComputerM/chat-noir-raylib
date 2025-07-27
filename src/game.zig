@@ -137,4 +137,66 @@ pub const Grid = struct {
         const cell = self.getCellContainingPoint(mouse) orelse return;
         cell.setState(self, CellState.blocked);
     }
+
+    /// Returns a list of surrounding cells for the given cell.
+    fn getSurroundingCells(self: *Grid, cell: GridCell) ![]GridCell {
+        var output = try std.ArrayList(GridCell).initCapacity(
+            std.heap.page_allocator,
+            6,
+        );
+        defer output.deinit();
+        if (cell.x > 0) {
+            output.appendAssumeCapacity(GridCell{
+                .x = cell.x - 1,
+                .y = cell.y,
+            });
+        }
+        if (cell.x < self.width - 1) {
+            output.appendAssumeCapacity(GridCell{
+                .x = cell.x + 1,
+                .y = cell.y,
+            });
+        }
+
+        if (cell.y > 0) {
+            output.appendAssumeCapacity(GridCell{
+                .x = cell.x,
+                .y = cell.y - 1,
+            });
+            if (cell.y % 2 == 0) {
+                if (cell.x > 0) {
+                    output.appendAssumeCapacity(GridCell{
+                        .x = cell.x - 1,
+                        .y = cell.y - 1,
+                    });
+                }
+            } else if (cell.x < self.width - 1) {
+                output.appendAssumeCapacity(GridCell{
+                    .x = cell.x + 1,
+                    .y = cell.y - 1,
+                });
+            }
+        }
+        if (cell.y < self.height - 1) {
+            output.appendAssumeCapacity(GridCell{
+                .x = cell.x,
+                .y = cell.y + 1,
+            });
+            if (cell.y % 2 == 0) {
+                if (cell.x > 0) {
+                    output.appendAssumeCapacity(GridCell{
+                        .x = cell.x - 1,
+                        .y = cell.y + 1,
+                    });
+                }
+            } else if (cell.x < self.width - 1) {
+                output.appendAssumeCapacity(GridCell{
+                    .x = cell.x + 1,
+                    .y = cell.y + 1,
+                });
+            }
+        }
+
+        return output.toOwnedSlice();
+    }
 };
