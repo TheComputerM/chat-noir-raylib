@@ -12,8 +12,8 @@ var grid: game.Grid = undefined;
 pub fn main() anyerror!void {
     grid = try game.Grid.init(
         std.heap.page_allocator,
-        7,
-        7,
+        9,
+        9,
     );
     defer grid.deinit();
 
