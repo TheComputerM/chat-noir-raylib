@@ -4,14 +4,13 @@ const rl = @import("raylib");
 const CellState = enum {
     available,
     blocked,
-    disabled,
     cat,
 
+    /// Returns the raylib color associated with the cell state.
     fn getColor(self: CellState) rl.Color {
         return switch (self) {
             .available => rl.Color.green,
             .blocked => rl.Color.light_gray,
-            .disabled => rl.Color.white,
             .cat => rl.Color.red,
         };
     }
@@ -19,14 +18,16 @@ const CellState = enum {
 
 // TODO: think of a better name for this struct
 const GridCell = struct {
-    x: usize,
-    y: usize,
+    x: u32,
+    y: u32,
 
-    fn getState(self: *const GridCell, grid: *Grid) CellState {
+    /// Returns the state of the cell in the grid.
+    fn getState(self: GridCell, grid: *Grid) CellState {
         return grid.cells.items[self.y].items[self.x];
     }
 
-    fn setState(self: *const GridCell, grid: *Grid, state: CellState) void {
+    /// Sets the state of the cell in the grid.
+    fn setState(self: GridCell, grid: *Grid, state: CellState) void {
         grid.cells.items[self.y].items[self.x] = state;
     }
 };
@@ -38,6 +39,7 @@ pub const Grid = struct {
     cell_radius: u32 = 25,
     cat: GridCell = .{ .x = 0, .y = 0 },
 
+    /// Initializes a new grid with the given width and height.
     pub fn init(allocator: std.mem.Allocator, width: u32, height: u32) !Grid {
         var cells = try std.ArrayList(std.ArrayList(CellState)).initCapacity(allocator, height);
 
@@ -75,7 +77,7 @@ pub const Grid = struct {
     }
 
     /// Returns the position of the cell in pixel coordinates.
-    fn getCellCenter(self: *Grid, cell: *const GridCell) rl.Vector2 {
+    fn getCellCenterPosition(self: *Grid, cell: *const GridCell) rl.Vector2 {
         const i = cell.x;
         const j = cell.y;
         const x = i * self.cell_radius * 2 + (j % 2) * self.cell_radius + self.cell_radius;
@@ -90,34 +92,34 @@ pub const Grid = struct {
     fn getCellContainingPoint(self: *Grid, point: rl.Vector2) ?GridCell {
         for (0..self.height) |j| {
             for (0..self.width) |i| {
-                const center = self.getCellCenter(&GridCell{
-                    .x = i,
-                    .y = j,
+                const center = self.getCellCenterPosition(&GridCell{
+                    .x = @intCast(i),
+                    .y = @intCast(j),
                 });
                 if (rl.checkCollisionPointCircle(
                     point,
                     center,
                     @as(f32, @floatFromInt(self.cell_radius)),
                 )) {
-                    return GridCell{ .x = i, .y = j };
+                    return GridCell{
+                        .x = @intCast(i),
+                        .y = @intCast(j),
+                    };
                 }
             }
         }
         return null;
     }
 
-    // fn moveCat(self: *Grid) void {
-
-    // }
-
+    /// Renders the grid to the raylib window.
     pub fn render(self: *Grid) !void {
         for (0..self.height) |j| {
             for (0..self.width) |i| {
                 const cell = GridCell{
-                    .x = i,
-                    .y = j,
+                    .x = @intCast(i),
+                    .y = @intCast(j),
                 };
-                const center = self.getCellCenter(&cell);
+                const center = self.getCellCenterPosition(&cell);
                 const color = cell.getState(self).getColor();
 
                 rl.drawPoly(
