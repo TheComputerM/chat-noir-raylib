@@ -58,6 +58,22 @@ pub const Grid = struct {
 
         grid.setCellState(cat, CellState.cat);
 
+        // Set some of the initial cells to blocked state randomly
+        var prng = std.Random.DefaultPrng.init(@intCast(std.time.timestamp()));
+        const rand = prng.random();
+        var initial_blocks = rand.intRangeAtMost(u32, (width + height) / 2, (width + height));
+        for (0..initial_blocks) |_| {
+            const cell = GridCell{
+                .x = rand.uintLessThan(u32, width),
+                .y = rand.uintLessThan(u32, height),
+            };
+            if (grid.getCellState(cell) == CellState.available) {
+                grid.setCellState(cell, CellState.blocked);
+            } else {
+                // If the cell is not available, try again
+                initial_blocks += 1;
+            }
+        }
         return grid;
     }
 
