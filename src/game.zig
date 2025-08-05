@@ -260,7 +260,7 @@ pub const Grid = struct {
         visited[source.y][source.x] = true;
         try queue.append(source);
 
-        var destination: GridCell = undefined;
+        var destination: ?GridCell = null;
         while (queue.items.len > 0) {
             const node = queue.orderedRemove(0);
 
@@ -277,6 +277,10 @@ pub const Grid = struct {
                     parent[cell.y][cell.x] = node;
                 }
             }
+        }
+
+        if (destination == null) {
+            return error.NoPathFound;
         }
 
         var path = std.ArrayList(GridCell).init(std.heap.page_allocator);
