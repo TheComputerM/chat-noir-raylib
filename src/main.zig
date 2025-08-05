@@ -17,10 +17,9 @@ pub fn main() anyerror!void {
     );
     defer grid.deinit();
 
-    const width = grid.cell_radius * grid.width * 2 + grid.cell_radius;
-    const height = grid.cell_radius * grid.height * 2;
+    const dimentions = grid.getGridDimensions();
 
-    rl.initWindow(@intCast(width), @intCast(height), "Chat Noir");
+    rl.initWindow(dimentions.width, dimentions.height, "Chat Noir");
     defer rl.closeWindow();
 
     if (builtin.os.tag == .emscripten) {

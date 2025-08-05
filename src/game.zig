@@ -25,6 +25,7 @@ const GridCell = struct {
 pub const Grid = struct {
     width: u32,
     height: u32,
+    padding: u32,
     cells: std.ArrayList(std.ArrayList(CellState)),
     cell_radius: u32 = 25,
     cat: GridCell = .{ .x = 0, .y = 0 },
@@ -50,6 +51,7 @@ pub const Grid = struct {
         var grid = Grid{
             .width = width,
             .height = height,
+            .padding = 8,
             .cells = cells,
             .cat = cat,
         };
@@ -118,11 +120,19 @@ pub const Grid = struct {
 
     /// Returns the position of the cell in pixel coordinates.
     fn getCellCenterPosition(self: *Grid, cell: GridCell) rl.Vector2 {
-        const x = cell.x * self.cell_radius * 2 + (cell.y % 2) * self.cell_radius + self.cell_radius;
-        const y = cell.y * self.cell_radius * 2 + self.cell_radius;
+        const x = (cell.x * self.cell_radius + self.padding) * 2 + (cell.y % 2) * self.cell_radius + self.cell_radius;
+        const y = (cell.y * self.cell_radius + self.padding) * 2 + self.cell_radius;
         return rl.Vector2{
             .x = @as(f32, @floatFromInt(x)),
             .y = @as(f32, @floatFromInt(y)),
+        };
+    }
+
+    /// Returns the dimensions of the grid in pixels.
+    pub fn getGridDimensions(self: *Grid) struct { width: i32, height: i32 } {
+        return .{
+            .width = @intCast((self.cell_radius * self.width + self.padding * 2) * 2 + self.cell_radius),
+            .height = @intCast((self.cell_radius * self.height + self.padding * 2) * 2),
         };
     }
 
